@@ -52,3 +52,12 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# hdf5 files
+*.hdf
+*.h4
+*.hdf4
+*.he2
+*.h5
+*.hdf5
+*.he5
