@@ -61,3 +61,6 @@ target/
 *.h5
 *.hdf5
 *.he5
+
+# old versions of files
+*.old
