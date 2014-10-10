@@ -22,11 +22,13 @@
 from pkg_resources import require
 require("numpy")
 require("h5py")
+require("matplotlib")
 
 # import modules as needed
 import numpy as np 
 import h5py
-
+import matplotlib as mpl
+from matplotlib.pylab import *
 
 #-------------------------------------------------------------------------------
 # 1a: use numpy to generate appropriate datasets
@@ -59,7 +61,7 @@ def linear_ramp_frame(rows,cols):
 # other algorithms to produce test images:
 #   flat colour (pick a value between 0 and 2**15-1)                        done
 #   diagonal ramp (saw tooth gradient from corner to corner)                done
-#   2-d gaussian                                                            TODO
+#   2-d gaussian                                                            done
 
 def flat_frame(rows,cols,shade):
     shade %= 2**15
@@ -75,10 +77,12 @@ def diagonal_ramp_frame(rows,cols):
         frame[x,:] %= 2**15
     return frame
 
-
 def gaussian_frame(rows,cols):
-    print "gaussian_frame not implemented"
-    return np.empty((rows,cols),dtype=np.uint16)
+    x = np.arange(0,rows,1,float)
+    y = x[:,np.newaxis]
+    x0 = fwhmx = rows/2 
+    y0 = fwhmy = cols/2
+    return (np.exp(-4*np.log(2) * ((x-x0)**2/fwhmx**2 + (y-y0)**2/fwhmy**2))*(2**15-1)).astype(np.uint16)
 
 
 #-------------------------------------------------------------------------------
@@ -127,3 +131,10 @@ large_diagonal = diagonal_ramp_frame(nrow2,ncol2) # these work!
 
 tiny_diagonal = diagonal_ramp_frame(10,12);
 print tiny_diagonal[()]
+
+small_gaus = gaussian_frame(nrow,ncol)
+large_gaus = gaussian_frame(nrow2,ncol2) # these work!
+print small_gaus[()]
+
+matshow(small_gaus,cmap=cm.Greys)
+show()
