@@ -3,73 +3,127 @@
 #
 # Author: Arvinder Palaha
 
-# Algorithm:
+# Tasks
 #
-# generate datasets
-#   create/open hdf5 file
-#   create/open datasets
-#     if no dset, create dset for 1 SAMPLE + RESET frame, for each P2M and P13M
-#     method to append frames to dset (resizeable dset)
-# implement processing steps 3-7
-#   implement alternative methods for some steps
-#   allow toggling of each processing step
-# measure performance of implemented functions
+#    1 Develop a script which will generate a small set of test files to run processing on
+#     a    Use numpy to generate appropriate datasets
+#     b    Store datasets in HDF5 format
+#     c    A file for each detector size: P2M, P13M
+#     d    Different datasets for SAMPLE and RESET frames
+#     e    Different datasets with varying noise levels
+#    2 Implement functions to carry out the steps 3-7 of processing required
+#     a    Note that some functions have alternatives - which also need to be implemented.
+#     b    Implementation in a fashion so that the individual functions can be enabled/disabled and replaced by alternative implementations
+#    3 Measure the performance of the implemented functions
+#     a    See for instance ipython %time or %timeit
+
 
 # pick up dls controls environment and versioned libraries
 from pkg_resources import require
 require("numpy")
+require("h5py")
 
-# import needed modules
-import numpy as np
+# import modules as needed
+import numpy as np 
 import h5py
 
-# frame dimensions
-nrow2 = 1408
-ncol2 = 1484
-nrow13 = 3528
-ncol13 = 3717
-nrowcal = 8
-ncolcal = 7
 
-# read write if exists, create otherwise
-filename = 'processing-test-data.hdf5'
-f = h5py.File(filename,'a')
-print f.items()
+#-------------------------------------------------------------------------------
+# 1a: use numpy to generate appropriate datasets
 
-# read/create file structure
-gp2m = f.require_group("/p2m")
-gp13m = f.require_group("/p13m")
+# start with p2m, store the dimensions in pixels as integers
+nrow, ncol = 1408, 1484
 
-# read/create datasets for RESET and SAMPLE frames
-dsetp2m_s = gp2m.require_dataset('sample',
-    shape=(1,ncol2+ncolcal,nrow2+nrowcal),
-    dtype='uint16',
-    exact=False)
-dsetp2m_r = gp2m.require_dataset('reset',
-    shape=(1,ncol2+ncolcal,nrow2+nrowcal),
-    dtype='uint16',
-    exact=False)
-dsetp13m_s = gp13m.require_dataset('sample',
-    shape=(1,ncol13+ncolcal,nrow13+nrowcal),
-    dtype='uint16',
-    exact=False)
-dsetp13m_r = gp13m.require_dataset('reset',
-    shape=(1,ncol13+ncolcal,nrow13+nrowcal),
-    dtype='uint16',
-    exact=False)
+# We want a 2d array of 15-bit integers, nearest real type is uint16
+# Wo test the range of the image storage, let's fill the dataset with a linear
+# ramp from 0 to 2**15-1 = 32767
+ramp = np.arange(0,nrow*ncol,1,dtype=np.uint16) # linear ramp 1d array
 
-# create a linearly ramping (pixel by pixel) "image", use for reset and sample
-dsetp2m_s[...] = np.arange(0,(ncol2+ncolcal)*(nrow2+nrowcal),
-    dtype=np.uint16).reshape((ncol2+ncolcal,nrow2+nrowcal))
-print dsetp2m_s[...]
-dsetp2m_r[...] = dsetp2m_s[...]
-dsetp13m_s[...] = np.arange(0,(ncol13+ncolcal)*(nrow13+nrowcal),
-    dtype=np.uint16).reshape((ncol13+ncolcal,nrow13+nrowcal))
-dsetp13m_r[...] = dsetp13m_s[...]
+# want to clip ramp at 2**15-1, using remainder of division (modulus)
+ramp[ramp>2**15-1] %= 2**15 
+# print max(ramp), ramp[2**15-2:2**15+2]
 
-# create a 'flat' image 
-# dsetp2m_s.resize(2)
-# print dsetp2m_s.maxshape
+# reshape the 1d array with nrow*ncol entries to 2d array of (nrow,ncol) shape
+ramp = ramp.reshape((nrow,ncol))
 
-# close the file
-f.close()
+# dataset values, shape (dimensions), number of values, size in MB
+print ramp, ramp.shape, ramp.size, ramp.nbytes/1024.**2, "MB"
+
+# put this functionality into ... a function!
+def linear_ramp_frame(rows,cols):
+    frame = np.arange(0,rows*cols,1,dtype=np.uint16) # 1d array of rising ints
+    frame[frame>2**15-1] %= 2**15      # reset ramp to 0 at every 2**15
+    frame = frame.reshape((rows,cols)) # change to 2d array
+    return frame
+
+# other algorithms to produce test images:
+#   flat colour (pick a value between 0 and 2**15-1)                        done
+#   diagonal ramp (saw tooth gradient from corner to corner)                done
+#   2-d gaussian                                                            TODO
+
+def flat_frame(rows,cols,shade):
+    shade %= 2**15
+    frame = np.empty((rows,cols),dtype=np.uint16)
+    frame[:] = shade
+    return frame
+
+def diagonal_ramp_frame(rows,cols):
+    # print "diagonal_ramp_frame not implemented"
+    frame = np.empty((rows,cols),dtype=np.uint16)
+    for x in range(0,rows): # iterates integers from 0 to (rows-1)
+        frame[x,:] = np.linspace(x,cols-1+x,cols).astype(np.uint16)
+        frame[x,:] %= 2**15
+    return frame
+
+
+def gaussian_frame(rows,cols):
+    print "gaussian_frame not implemented"
+    return np.empty((rows,cols),dtype=np.uint16)
+
+
+#-------------------------------------------------------------------------------
+# 1b: store datasets in HDF5 format
+
+# open a hdf5 file with h5py, create it if it doesn't exist
+# using 'with, as:' like this ensures file closes after this scope
+with h5py.File('p2m_test_frames.hdf5','a') as f:
+
+    # store ramp image to file
+    dset = f.require_dataset('ramp',ramp.shape,dtype=ramp.dtype,exact=False)
+    print dset[()] # show stored values, will be 0's if 1st time file opened
+    dset[...] = ramp
+    print dset[()] # show assigned values
+
+
+#-------------------------------------------------------------------------------
+# 1c: a file for each detector size (P2M and P13M)
+
+# dimensions for P13M detector in pixels
+nrow2, ncol2 = 3528,3717
+
+# open a second file for the larger detector size, create it if it doesn't exist
+with h5py.File('p13m_test_frames.hdf5','a') as f:
+
+    # create/open dataset ready for linear ramp image with P13M dimensions
+    dset = f.require_dataset('ramp',(nrow2,ncol2),dtype='uint16',exact=False)
+    print dset[()], dset.shape, dset.size,
+
+
+#-------------------------------------------------------------------------------
+# 1d: different datasets for SAMPLE and RESET frames
+
+# create a flat frame for each detector size, to act as the RESET frame
+small_flat_reset = flat_frame(nrow,ncol,2**15/2)
+large_flat_reset = flat_frame(nrow2,ncol2,2**15/2) # this works
+
+# create two sample frames with a single shade/value
+small_flat = flat_frame(nrow,ncol,2**15/8)
+large_flat = flat_frame(nrow2,ncol2,15*(2**15)/16) # this works too :)
+
+# create two sample frames with a diagonal ramp
+small_diagonal = diagonal_ramp_frame(nrow,ncol)
+large_diagonal = diagonal_ramp_frame(nrow2,ncol2) # these work!
+# print small_diagonal[()], large_diagonal[()]
+
+tiny_diagonal = diagonal_ramp_frame(10,12);
+print tiny_diagonal[()]
