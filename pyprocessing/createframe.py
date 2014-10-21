@@ -2,34 +2,30 @@
 #
 # Author: Arvinder Palaha
 import numpy as np
+import processframe as prcf
 
-
-# def ADUcorrection(ADUc,Oc,Gc,Oct,Gct,ADUf,Of,Gf,Oft,Gft):
-#     ADUcor  = ((ADUc-Oc)/Gc) * Gct + Oct
-#     ADUcor -= ((ADUf-Of)/Gf) * Gft + Oft
-#     return ADUcor
 
 class detector:
 
     def __init__(self,
-        c=1408, r=1484, cc=8, cr=7, n=13
+        c=1408, r=1484, cc=8, cr=7, n=13,
+        Oc = 0, Gc = 1, Oct = 2**8-1, Gct = 2**8,
+        Of = 0, Gf = 1, Oft = 0,      Gft = 1
         ):
-        # Oc = 0, Gc = 1, Oct = 2**8-1, Gct = 2**8,
-        # Of = 0, Gf = 1, Oft = 0,      Gft = 1
         self.ncol = c
         self.nrow = r
         self.nbit = n
         self.ncolcal = cc
         self.nrowcal = cr
-        # self.offCoarse = Oc
-        # self.gainCoarse = Gc
-        # self.offCoarseTarget = Oct
-        # self.gainCoarseTarget = Gct
-        # self.offFine = Of
-        # self.gainFine = Gf
-        # self.offFineTarget = Oft
-        # self.gainFineTarget = Gft
-
+        self.coarseOffset = Oc
+        self.coarseGain = Gc
+        self.fineOffset = Of
+        self.fineGain = Gf
+        self.coarseOffsetTarget = Oct
+        self.coarseGainTarget = Gct
+        self.fineOffsetTarget = Oft
+        self.fineGainTarget = Gft
+        
     def flatimage(self,shade):
         assert shade>0
         image = np.zeros((self.nrow,self.ncol),dtype=np.uint16)
@@ -110,6 +106,10 @@ class detector:
 
     def addnoise(self,image):
         pass
+
+    def digital2analog(self,digital):
+        vfunc = np.vectorize(prcf.digital2analogpixel)
+        return vfunc(digital)
 
 
 class triangleparams:
