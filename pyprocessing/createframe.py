@@ -25,6 +25,8 @@ class detector:
         self.coarseGainTarget = Gct
         self.fineOffsetTarget = Oft
         self.fineGainTarget = Gft
+        self.imageshape = (r,c)
+        self.fullshape = (r+cr,c+cc)
         
     def flatimage(self,shade):
         assert shade>0
@@ -53,6 +55,12 @@ class detector:
             )
         image %= 2**self.nbit
         return image.astype(np.uint16)
+
+    def randomframe(self):
+        return (
+            (2**self.nbit-1)
+            *np.random.random((self.nrow,self.ncol))
+            ).astype(np.uint16)
 
     def trianglemask(self,
         x1=.0, y1=.45 ,
@@ -89,6 +97,12 @@ class detector:
     def trianglediagonalramp(self,nramps=1):
         return self.trianglemask()*self.diagonalxy(nramps)
 
+    def trianglerandom(self):
+        return self.trianglemask()*self.randomframe()
+
+    def trianglegaus(self,nramps=5):
+        return self.trianglemask()*self.gaussian(nramps)
+
     def addcalibrationpixels(self,image):
         rows,cols = image.shape
         rows += self.nrowcal
@@ -104,8 +118,9 @@ class detector:
         image[2*quarter:3*quarter , :] += (1<<(self.nbit+1))
         image[3*quarter:4*quarter , :] += (1<<self.nbit)+(1<<(self.nbit+1))
 
-    def addnoise(self,image):
-        pass
+    def poissonnoise(self,image):
+        vfunc = np.vectorize(prcf.poissonnoisepixel)
+        image[...] = vfunc(image,self.nbit)
 
     def digital2analog(self,digital):
         vfunc = np.vectorize(prcf.digital2analogpixel)

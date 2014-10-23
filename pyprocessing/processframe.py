@@ -12,7 +12,7 @@ def a2d_gain(number):
     return int('{:02b}'.format( number & 3 )[::-1], 2)
 
 def a2d_fine(number):
-    return int('{:08b}'.format( (number & 2**8-1<<2) >> 2)[::-1], 2)
+    return int('{:10b}'.format( (number & 2**8-1<<2) >> 2)[::-1], 2)
 
 def a2d_coarse(number):
     return int('{:05b}'.format( number>>10 & 2**5-1)[::-1], 2)
@@ -35,6 +35,9 @@ def ADUcoarsefinegain(number,Gct=2**8,Oct=2**8-1):
 def digital2analogpixel(digitalpixel):
     coarse,fine,gain = ADUcoarsefinegain(digitalpixel)
     return d2a_gain(gain) + d2a_fine(fine) + d2a_coarse(coarse)
+
+def poissonnoisepixel(digitalpixel,nbit): # ensure value not outside 13bit range
+    return max(min(np.random.poisson(digitalpixel),2**nbit-1),0) 
 
 class processor:
 
