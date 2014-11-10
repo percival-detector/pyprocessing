@@ -32,10 +32,26 @@ class CreatingFrames(unittest.TestCase):
         rows = det_obj.nrow
         calibrationcolumns = det_obj.ncolcal
         calibrationrows = det_obj.nrowcal
+        imageshape = det_obj.imageshape
+        fullshape = det_obj.fullshape
         self.assertEqual(1484,rows)
         self.assertEqual(1408,columns)
         self.assertEqual(7,calibrationrows)
         self.assertEqual(8,calibrationcolumns)
+
+    def test_arguments_passsed(self):
+        det_obj = detector(100,200,5,10)
+        columns = det_obj.ncol
+        rows = det_obj.nrow
+        calibrationcolumns = det_obj.ncolcal
+        calibrationrows = det_obj.nrowcal
+        imageshape = det_obj.imageshape
+        fullshape = det_obj.fullshape
+        self.assertEqual(200,rows)
+        self.assertEqual(100,columns)
+        self.assertEqual(10,calibrationrows)
+        self.assertEqual(5,calibrationcolumns)
+
 
 if __name__ == '__main__':
     unittest.main()

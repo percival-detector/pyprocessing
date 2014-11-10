@@ -13,7 +13,9 @@ class detector:
         self.nrow = r
         self.ncolcal = cc
         self.nrowcal = cr
-
+        self.imageshape = (r,c)
+        self.fullshape = (r+cr,c+cc)
+        
 # class detector:
 
 #     def __init__(self,
@@ -34,8 +36,7 @@ class detector:
 #         self.coarseGainTarget = Gct
 #         self.fineOffsetTarget = Oft
 #         self.fineGainTarget = Gft
-#         self.imageshape = (r,c)
-#         self.fullshape = (r+cr,c+cc)
+
         
 #     def flatimage(self,shade):
 #         assert shade>0
