@@ -1,21 +1,30 @@
-# # createframe.py
-# #
-# # Author: Arvinder Palaha
+# createframe.py
+#
+# Author: Arvinder Palaha
 # import numpy as np
 # import processframe as prcf
 
 
-class detector:
+# class detector(object):
 
-    def __init__(self,
-        c = 1408, r = 1484, cc = 8, cr = 7):
-        self.ncol = c
-        self.nrow = r
-        self.ncolcal = cc
-        self.nrowcal = cr
-        self.imageshape = (r,c)
-        self.fullshape = (r+cr,c+cc)
-        
+#     def __init__(self,
+#         c = 1408, r = 1484, cc = 8, cr = 7,
+#         Oc = 0, Gc = 1, Oct = 2**8-1, Gct = 2**8,
+#         Of = 0, Gf = 1, Oft = 0,      Gft = 1
+#         ):
+#         self.nCol = c
+#         self.nRow = r
+#         self.nColCal = cc
+#         self.nRowCal = cr
+#         self.coarseOffset = Oc
+#         self.coarseGain = Gc
+#         self.fineOffset = Of
+#         self.fineGain = Gf
+#         self.coarseOffsetTarget = Oct
+#         self.coarseGainTarget = Gct
+#         self.fineOffsetTarget = Oft
+#         self.fineGainTarget = Gft
+
 # class detector:
 
 #     def __init__(self,
