@@ -43,21 +43,21 @@ class CreatingFrames(unittest.TestCase):
         self.assertEqual(8,     calibrationcolumns)
         self.assertEqual(7,     calibrationrows)
 
-        fullWellDiode   = detObj.fullWellDiode
-        fullWellC0      = detObj.fullWellC0
-        fullWellC1      = detObj.fullWellC1
-        fullWellC2      = detObj.fullWellC2
+        fullWellDiode   = detObj.cumuFullWellDiode
+        fullWellC0      = detObj.cumuFullWellC0
+        fullWellC1      = detObj.cumuFullWellC1
+        fullWellC2      = detObj.cumuFullWellC2
 
         self.assertEqual(2.64e4,fullWellDiode)
         self.assertEqual(3.56e5,fullWellC0)
         self.assertEqual(5.27e6,fullWellC1)
         self.assertEqual(1.42e7,fullWellC2)
 
-        diodeStartVoltage       = detObj.diodeStartVoltage
-        diodeThresholdVoltage   = detObj.diodeThresholdVoltage
+        StartVoltage   = detObj.StartVoltage
+        SwitchVoltage  = detObj.SwitchVoltage
 
-        self.assertEqual(2,     diodeStartVoltage)
-        self.assertEqual(0.25,  diodeThresholdVoltage)
+        self.assertEqual(2,     StartVoltage)
+        self.assertEqual(0.25,  SwitchVoltage)
 
         gains = detObj.gains
         self.assertEqual(gains,[1,2,4,8])
@@ -83,48 +83,48 @@ class CreatingFrames(unittest.TestCase):
         detObj = detector()
 
         nElecs = [
-            detObj.fullWellDiode-100,
-            detObj.fullWellC0-100,
-            detObj.fullWellC1-100,
-            detObj.fullWellC2-100
+            detObj.cumuFullWellDiode-100,
+            detObj.cumuFullWellC0-100,
+            detObj.cumuFullWellC1-100,
+            detObj.cumuFullWellC2-100
         ]
 
         # for nElec in nElecs:
         voltageIn = detObj.e2vin(nElecs[0])
         self.assertTrue(
-            voltageIn       >= detObj.diodeThresholdVoltage # 0.25
-            and voltageIn   <= detObj.diodeStartVoltage)    # 2.0
+            voltageIn       >= detObj.SwitchVoltage # 0.25
+            and voltageIn   <= detObj.StartVoltage)    # 2.0
         voltageIn = detObj.e2vin(nElecs[1])
         self.assertTrue(
-            voltageIn       >= detObj.diodeThresholdVoltage # 0.25
-            and voltageIn   <= detObj.diodeStartVoltage)    # 2.0
+            voltageIn       >= detObj.SwitchVoltage # 0.25
+            and voltageIn   <= detObj.StartVoltage)    # 2.0
         voltageIn = detObj.e2vin(nElecs[2])
         self.assertTrue(
-            voltageIn       >= detObj.diodeThresholdVoltage # 0.25
-            and voltageIn   <= detObj.diodeStartVoltage)    # 2.0
+            voltageIn       >= detObj.SwitchVoltage # 0.25
+            and voltageIn   <= detObj.StartVoltage)    # 2.0
         voltageIn = detObj.e2vin(nElecs[3])
         self.assertTrue(
-            voltageIn       >= detObj.diodeThresholdVoltage # 0.25
-            and voltageIn   <= detObj.diodeStartVoltage)    # 2.0
+            voltageIn       >= detObj.SwitchVoltage # 0.25
+            and voltageIn   <= detObj.StartVoltage)    # 2.0
 
         # zero electrons should give start voltage
         voltageIn = detObj.e2vin(0)
-        self.assertEqual(detObj.diodeStartVoltage,voltageIn)
+        self.assertEqual(detObj.StartVoltage,voltageIn)
 
-        # full well diode number of electrons should give threshold voltage
-        voltageIn = detObj.e2vin(detObj.fullWellDiode)
-        self.assertEqual(detObj.diodeThresholdVoltage,voltageIn)
-        voltageIn = detObj.e2vin(detObj.fullWellC0)
-        self.assertEqual(detObj.diodeThresholdVoltage,voltageIn)
-        voltageIn = detObj.e2vin(detObj.fullWellC1)
-        self.assertEqual(detObj.diodeThresholdVoltage,voltageIn)
-        voltageIn = detObj.e2vin(detObj.fullWellC2)
-        self.assertEqual(detObj.diodeThresholdVoltage,voltageIn)
+        # full well diode number of electrons should give Switch voltage
+        voltageIn = detObj.e2vin(detObj.cumuFullWellDiode)
+        self.assertEqual(detObj.SwitchVoltage,voltageIn)
+        voltageIn = detObj.e2vin(detObj.cumuFullWellC0)
+        self.assertEqual(detObj.SwitchVoltage,voltageIn)
+        voltageIn = detObj.e2vin(detObj.cumuFullWellC1)
+        self.assertEqual(detObj.SwitchVoltage,voltageIn)
+        voltageIn = detObj.e2vin(detObj.cumuFullWellC2)
+        self.assertEqual(detObj.SwitchVoltage,voltageIn)
 
         # more than complete full well number of electrons should still give
-        # voltage for largest signal (vThreshold)
-        voltageIn = detObj.e2vin(detObj.fullWellC2+1000)
-        self.assertEqual(detObj.diodeThresholdVoltage,voltageIn)
+        # voltage for largest signal (vSwitch)
+        voltageIn = detObj.e2vin(detObj.cumuFullWellC2+1000)
+        self.assertEqual(detObj.SwitchVoltage,voltageIn)
 
 #_______________________________________________________________________________
     def test_get_gain_from_number_of_electrons(self):
@@ -151,8 +151,13 @@ class CreatingFrames(unittest.TestCase):
         gain = detObj.e2gain(-1000)
         self.assertEqual(gain,gains[0])
 
+#_______________________________________________________________________________
+    def test_electron_to_ADU_coarse_code(self):
 
+        detObj = detector()
 
+        # zero electrons should give ADU coarse code of 31
+        self.assertEqual(31,detObj.e2ADUcoarse(0))
 
     # def test_change_detector_size(self):
     #     detObj = detector()
