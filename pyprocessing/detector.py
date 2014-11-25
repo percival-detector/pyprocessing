@@ -31,10 +31,7 @@ class detector(object):
         self.nFineBits          = 7
         self.nFineOverRangeBits = 1
 
-        self.adcFineGain        = [(2**self.nFineBits-1)/(2./(2**self.nCoarseBits-1))]*7
-        self.adcFineOffset      = [0]*7
-        self.adcCoarseGain      = [-2./(self.nCoarseBits-1)]*7
-        self.adcCoarseOffset    = [2**self.nCoarseBits-1]*7
+        self.nADC               = 7
 
         self.gains  = [1,2,4,8]
 
@@ -49,6 +46,10 @@ class detector(object):
         self.coarseGainTarget   = -2./(2**self.nCoarseBits-1)
         self.coarseOffsetTarget = 2**self.nCoarseBits-1
 
+        self.adcFineGain        = [(2**self.nFineBits-1)/(2./(2**self.nCoarseBits-1))]*self.nADC
+        self.adcFineOffset      = [0]*self.nADC
+        self.adcCoarseGain      = [-2./(self.nCoarseBits-1)]*self.nADC
+        self.adcCoarseOffset    = [2**self.nCoarseBits-1]*self.nADC
 
     #___________________________________________________________________________
     def e2capaV(self,nElec):

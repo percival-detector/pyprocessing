@@ -69,10 +69,12 @@ class CreatingFrames(unittest.TestCase):
         ncb     = detObj.nCoarseBits
         nfb     = detObj.nFineBits
         nforb   = detObj.nFineOverRangeBits
+        nadc    = detObj.nADC
 
         self.assertEqual(ncb,   5)
         self.assertEqual(nfb,   7)
         self.assertEqual(nforb, 1)
+        self.assertEqual(nadc,  7)
 
         # calculated parameters
         fullWellDiode   = detObj.fullWellDiode 
@@ -100,7 +102,7 @@ class CreatingFrames(unittest.TestCase):
         coarseGains     = detObj.adcCoarseGain
         coarseOffsets   = detObj.adcCoarseOffset
 
-        self.assertTrue(len(fineGains)==len(fineOffsets)==len(coarseGains)==len(coarseOffsets)==7)
+        self.assertTrue(len(fineGains)==len(fineOffsets)==len(coarseGains)==len(coarseOffsets)==nadc)
 
 
 #_______________________________________________________________________________
