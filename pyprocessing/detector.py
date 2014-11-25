@@ -23,8 +23,18 @@ class detector(object):
         self.cumuFullWellC1     = 5.27e6
         self.cumuFullWellC2     = 1.42e7
 
-        self.StartVoltage  = 2.
-        self.SwitchVoltage = 0.25
+        self.startVoltage   = [2. for x in range(4)]
+        self.switchVoltage  = [0.25 for x in range(4)]
+        self.dbRefVoltage   = 0.25
+
+        self.nCoarseBits        = 5
+        self.nFineBits          = 7
+        self.nFineOverRangeBits = 1
+
+        self.adcFineGain        = [(2**self.nFineBits-1)/(2./(2**self.nCoarseBits-1))]*7
+        self.adcFineOffset      = [0]*7
+        self.adcCoarseGain      = [-2./(self.nCoarseBits-1)]*7
+        self.adcCoarseOffset    = [2**self.nCoarseBits-1]*7
 
         self.gains  = [1,2,4,8]
 
@@ -34,74 +44,134 @@ class detector(object):
         self.fullWellC1     = self.cumuFullWellC1 - self.cumuFullWellC0
         self.fullWellC2     = self.cumuFullWellC2 - self.cumuFullWellC1
 
-        # Oc = 0, Gc = 1, Oct = 2**8-1, Gct = 2**8,
-        # Of = 0, Gf = 1, Oft = 0,      Gft = 1
+        self.fineGainTarget     = (2**self.nFineBits-1)/(2./(2**self.nCoarseBits-1))
+        self.fineOffsetTarget   = 0
+        self.coarseGainTarget   = -2./(2**self.nCoarseBits-1)
+        self.coarseOffsetTarget = 2**self.nCoarseBits-1
 
-        # self.coarseOffset = Oc
-        # self.coarseGain = Gc
-        # self.fineOffset = Of
-        # self.fineGain = Gf
-
-        # self.coarseOffsetTarget = Oct
-        # self.coarseGainTarget = Gct
-        # self.fineOffsetTarget = Oft
-        # self.fineGainTarget = Gft
 
     #___________________________________________________________________________
-    def e2vin(self,nElec):
+    def e2capaV(self,nElec):
+        capaV = self.startVoltage[:]
+        
+        while nElec:
 
-        vIn     = 0.
-        vSwitch = self.SwitchVoltage
-        vStart  = self.StartVoltage
-        vRange  = abs(vStart - vSwitch)
-
-        fwD     = self.fullWellDiode
-        fwC0    = self.fullWellC0
-        fwC1    = self.fullWellC1
-        fwC2    = self.fullWellC2
-
-        if nElec <= self.cumuFullWellDiode:
-
-            countedElec = nElec
-            vIn = vStart - (vRange * (countedElec/fwD))# + vThres
-
-        elif nElec <= self.cumuFullWellC0:
-
-            countedElec = nElec-self.cumuFullWellDiode
-            vIn = vStart - (vRange * (countedElec/fwC0))# + vThres
-
-        elif nElec <= self.cumuFullWellC1:
-
-            countedElec = nElec-self.cumuFullWellC0
-            vIn = vStart - (vRange * (countedElec/fwC1))# + vThres
-
-        elif nElec <= self.cumuFullWellC2:
-
-            countedElec = nElec-self.cumuFullWellC1
-            vIn = vStart - (vRange * (countedElec/fwC2))# + vThres
-
-        else: # more electrons than full well of C2, saturated signal
-            vIn = vSwitch
-
-        return vIn
+            if capaV[0] > self.switchVoltage[0]:
+                if nElec <= self.fullWellDiode:
+                    capaV[0] -= (nElec/self.fullWellDiode)*(self.startVoltage[0]-self.switchVoltage[0])
+                    nElec -= nElec
+                else:
+                    capaV[0] = self.switchVoltage[0]
+                    nElec -= self.fullWellDiode
+            
+            elif capaV[1] > self.switchVoltage[1]:
+                if nElec <= self.fullWellC0:
+                    capaV[1] -= nElec*(self.startVoltage[1]-self.switchVoltage[1])/self.fullWellC0
+                    nElec -= nElec
+                else:
+                    capaV[1] = self.switchVoltage[1]
+                    nElec -= self.fullWellC0
+            
+            elif capaV[2] > self.switchVoltage[2]:
+                if nElec <= self.fullWellC1:
+                    capaV[2] -= nElec*(self.startVoltage[2]-self.switchVoltage[2])/self.fullWellC1
+                    nElec -= nElec
+                else:
+                    capaV[2] = self.switchVoltage[2]
+                    nElec -= self.fullWellC1
+            
+            elif capaV[3] > self.switchVoltage[3]:
+                if nElec <= self.fullWellC2:
+                    capaV[3] -= nElec*(self.startVoltage[3]-self.switchVoltage[3])/self.fullWellC2
+                    nElec -= nElec
+                else:
+                    capaV[3] = self.switchVoltage[3]
+                    nElec = 0 # saturation
+            else:
+                pass
+            # print nElec, capaV
+        
+        return capaV
 
     #___________________________________________________________________________
-    def e2gain(self,nElec):
-        if nElec <= self.fullWellDiode:
-            return self.gains[0]
-        elif nElec <= self.fullWellC0:
-            return self.gains[1]
-        elif nElec <= self.fullWellC1:
-            return self.gains[2]
+    def capaV2adu(self,capaV):
+        # which diode/capacitor to use? Smallest one with V>VdbRef (==Vswitch)
+        vIn = 0
+
+        if capaV[0] > self.dbRefVoltage:
+            vIn = capaV[0]
+        elif capaV[1] > self.dbRefVoltage:
+            vIn = capaV[1]
+        elif capaV[2] > self.dbRefVoltage:
+            vIn = capaV[2]
         else:
-            return self.gains[3]
+            vIn = capaV[3]
 
-    #___________________________________________________________________________
-    def e2ADUcoarse(self,nElec):
-        raise NotImplementedError
-        leastSignificantBit = self.StartVoltage/31.
-        vIn = self.e2vin(nElec)
-        ADUc = 0
+        # now I have vIn, I need number of coarse steps, then fine steps
+        # for coarse, need:
+        #   size of coarse step -> Gain
+        #   where to start -> -Offset
+
+
+        return 0
+
+
+
+    # #___________________________________________________________________________
+    # def e2vin(self,nElec):
+
+    #     vIn     = 0.
+    #     vSwitch = self.SwitchVoltage
+    #     vStart  = self.StartVoltage
+    #     vRange  = abs(vStart - vSwitch)
+
+    #     fwD     = self.fullWellDiode
+    #     fwC0    = self.fullWellC0
+    #     fwC1    = self.fullWellC1
+    #     fwC2    = self.fullWellC2
+
+    #     if nElec <= self.cumuFullWellDiode:
+
+    #         countedElec = nElec
+    #         vIn = vStart - (vRange * (countedElec/fwD))# + vThres
+
+    #     elif nElec <= self.cumuFullWellC0:
+
+    #         countedElec = nElec-self.cumuFullWellDiode
+    #         vIn = vStart - (vRange * (countedElec/fwC0))# + vThres
+
+    #     elif nElec <= self.cumuFullWellC1:
+
+    #         countedElec = nElec-self.cumuFullWellC0
+    #         vIn = vStart - (vRange * (countedElec/fwC1))# + vThres
+
+    #     elif nElec <= self.cumuFullWellC2:
+
+    #         countedElec = nElec-self.cumuFullWellC1
+    #         vIn = vStart - (vRange * (countedElec/fwC2))# + vThres
+
+    #     else: # more electrons than full well of C2, saturated signal
+    #         vIn = vSwitch
+
+    #     return vIn
+
+    # #___________________________________________________________________________
+    # def e2gain(self,nElec):
+    #     if nElec <= self.fullWellDiode:
+    #         return self.gains[0]
+    #     elif nElec <= self.fullWellC0:
+    #         return self.gains[1]
+    #     elif nElec <= self.fullWellC1:
+    #         return self.gains[2]
+    #     else:
+    #         return self.gains[3]
+
+    # #___________________________________________________________________________
+    # def e2ADUcoarse(self,nElec):
+    #     raise NotImplementedError
+    #     leastSignificantBit = self.StartVoltage/31.
+    #     vIn = self.e2vin(nElec)
+    #     ADUc = 0
 
 
     #___________________________________________________________________________
