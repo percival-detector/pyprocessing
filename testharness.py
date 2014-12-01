@@ -101,9 +101,14 @@ class CreatingFrames(unittest.TestCase):
         fineOffsets     = detObj.adcFineOffset
         coarseGains     = detObj.adcCoarseGain
         coarseOffsets   = detObj.adcCoarseOffset
+        vThresholds     = detObj.adcVThreshold
+        coarseSteps     = detObj.adcCoarseStep
 
         self.assertTrue(len(fineGains)==len(fineOffsets)==len(coarseGains)==len(coarseOffsets)==nadc)
-
+        self.assertEqual(len(vThresholds),7)
+        self.assertEqual(len(coarseSteps),7)
+        self.assertEqual(vThresholds[0],2.)
+        self.assertEqual(coarseSteps[0],vThresholds[0]/coarseOffsets[0])
 
 #_______________________________________________________________________________
     def test_arguments_passsed(self):
@@ -154,14 +159,29 @@ class CreatingFrames(unittest.TestCase):
             )
 
 #_______________________________________________________________________________
-    def test_capaV_to_vIn_and_gain(self):
+    def test_capaV_to_vIn_and_capaNum(self):
         detObj = detector()
 
         capaV = detObj.e2capaV(0) # zero electrons, capaV = startvoltage
-        aduCode = detObj.capaV2adu(capaV)
-        self.assertIsInstance(aduCode,int)
-        self.assertLessEqual(aduCode,2**12-1)
-        self.assertGreaterEqual(aduCode,0)
+        vIn,capaNum = detObj.capaV2vInGain(capaV)
+        
+        self.assertEqual(vIn,detObj.startVoltage[capaNum])
+        self.assertTrue(0<=capaNum<4)
+
+        vIn,capaNum = detObj.capaV2vInGain(detObj.e2capaV(0.5*detObj.fullWellC1))
+        self.assertEqual(capaNum,2)
+        self.assertTrue(0.25<=vIn<=2.)
+
+        vIn,capaNum = detObj.capaV2vInGain(detObj.e2capaV(1.5*detObj.cumuFullWellC2))
+        self.assertEqual(capaNum,3)
+        self.assertEqual(vIn,0.25)
+
+#_______________________________________________________________________________
+    def test_vIn_and_capaNum_to_ADU_code(self):
+        detObj = detector()
+
+        vIn, capaNum = detObj.capaV2vInGain(detObj.e2capaV())
+        aduCode = detObj.vIn2ADUCode(vIn,capaNum)
 
 
 # #_______________________________________________________________________________

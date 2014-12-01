@@ -4,6 +4,7 @@
 #
 # Author: Arvinder Palaha
 
+import numpy as np
 
 class detector(object):
 
@@ -31,7 +32,7 @@ class detector(object):
         self.nFineBits          = 7
         self.nFineOverRangeBits = 1
 
-        self.nADC               = 7
+        self.nADC   = 7
 
         self.gains  = [1,2,4,8]
 
@@ -50,6 +51,8 @@ class detector(object):
         self.adcFineOffset      = [0]*self.nADC
         self.adcCoarseGain      = [-2./(self.nCoarseBits-1)]*self.nADC
         self.adcCoarseOffset    = [2**self.nCoarseBits-1]*self.nADC
+        self.adcVThreshold      = [2.]*self.nADC
+        self.adcCoarseStep      = [(x/self.coarseOffsetTarget) for x in self.adcVThreshold]
 
     #___________________________________________________________________________
     def e2capaV(self,nElec):
@@ -95,28 +98,43 @@ class detector(object):
         return capaV
 
     #___________________________________________________________________________
-    def capaV2adu(self,capaV):
+    def capaV2vInGain(self,capaV):
         # which diode/capacitor to use? Smallest one with V>VdbRef (==Vswitch)
         vIn = 0
+        capaNum = 0
 
         if capaV[0] > self.dbRefVoltage:
             vIn = capaV[0]
         elif capaV[1] > self.dbRefVoltage:
             vIn = capaV[1]
+            capaNum = 1
         elif capaV[2] > self.dbRefVoltage:
             vIn = capaV[2]
+            capaNum = 2
         else:
             vIn = capaV[3]
+            capaNum = 3
+
+        return vIn, capaNum
+
+    #___________________________________________________________________________
+    def vIn2ADUCode(self,vIn,capaNum,ADCNum=0):
 
         # now I have vIn, I need number of coarse steps, then fine steps
-        # for coarse, need:
-        #   size of coarse step -> Gain
-        #   where to start -> -Offset
+        # for coarse, I need:
+        #   diode voltage -> capaV[n]
+        #   size of coarse step -> coarseGain
+        #   where to start -> -coarseOffset
+        # for fine, I need:
+        #   diode voltage after coarse count -> capaV[n] + coarseADU*coarseStep
+        #   size of fine step -> fineGain
+        #   where to start -> fineOffset
 
+        nCoarseSteps = (self.adcVThreshold[ADCNum]-vIn)/self.coarseStep[ADCNum]
+        coarseCode = np.ceil(nCoarseSteps)
+        vOvershoot = (coarseCode - nCoarseSteps)*self.coarseStep[ADCNum]
 
         return 0
-
-
 
     # #___________________________________________________________________________
     # def e2vin(self,nElec):
