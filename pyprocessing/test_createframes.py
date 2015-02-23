@@ -32,6 +32,8 @@ class ReadDataTest(unittest.TestCase):
         with self.assertRaises(AssertionError):
             createframes.ReadData(filename)
 
+    def test_given_real_hdf5_file_when_class_invoked_then_hdf5_file_type_recognised(self):
+        pass
 
 
 if __name__ == '__main__':
