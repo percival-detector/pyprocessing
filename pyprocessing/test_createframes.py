@@ -45,12 +45,15 @@ class ReadDataTest(unittest.TestCase):
         except IOError:
             self.fail('createframes.DataReader IOerror raised')
 
-    # def test_given_real_hdf5_file_when_called_then_return_dict_of_dicts_for_each_group(self):
+    def test_given_real_hdf5_file_when_get_dset_called_with_path_argument_then_return_nparray(self):
 
-    #     with h5py.File('../p2m.hdf5') as h5_file:
-    #         data_dict = createframes.visit_all_objects(h5_file)
+        reader = createframes.DataReader('../p2m.hdf5')
+        dset_info = reader.dset_info
+        
+        dset = reader.get_dataset(dset_info.keys()[0])
 
-    # def test_given_hdf5_file_when_called_then_return_dict_
+        self.assertIsInstance(dset,createframes.np.ndarray)
+        # self.assertEqual()
 
 
 class VisitAllObjects(unittest.TestCase):

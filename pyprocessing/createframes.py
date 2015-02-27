@@ -37,3 +37,6 @@ class DataReader:
 
         self.file = h5py.File(filename,'r')
         self.dset_info = visit_all_objects(self.file)
+
+    def get_dataset(self,path=''):
+        return np.array((1,2))
