@@ -7,7 +7,17 @@ import os
 import h5py
 import numpy as np
 
-def ReadData(filename):
+
+def visit_all_objects(group, path, fileinfo=None):
+
+    if fileinfo is None:
+        fileinfo = {}
+    
+    return fileinfo
+
+
+
+def read_data(filename):
 
     try:
         assert os.path.exists(filename)
